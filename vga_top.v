@@ -79,7 +79,7 @@ module vga_top(
 
 
 	display_controller dc(.clk(ClkPort), .hSync(hSync), .vSync(vSync), .bright(bright), .hCount(hc), .vCount(vc));
-	char_controller char_c(.clk(move_clk), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR),.hCount(hc), .vCount(vc), .rgb(rgb), .background(background));
+	main_controller main_c(.clk(move_clk), .bright(bright), .rst(BtnC), .up(BtnU), .down(BtnD),.left(BtnL),.right(BtnR), .hCount(hc), .vCount(vc), .rgb(rgb), .background(background));
 	
 	assign vgaR = rgb[11:8];
 	assign vgaB = rgb[7:4];

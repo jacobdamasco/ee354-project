@@ -11,11 +11,17 @@ module main_controller(
    );
 
 	wire block_fill;
-	wire[11:0] platform_rgb;
 	
 	// char position
 	reg [9:0] cx_pos, cy_pos;
 	reg [7:0] jump_ctr;
+
+	// platform positions
+	reg [9:0] px1_pos, py1_pos;
+	reg [9:0] px2_pos, py2_pos;
+	reg [9:0] px3_pos, py3_pos;
+	reg [9:0] px4_pos, py4_pos;
+	reg [9:0] px5_pos, py5_pos;
 	
 	// colors
 	// hex guide: A10 B11 C12 D13 E14 F15
@@ -34,30 +40,30 @@ module main_controller(
 						(hCount <= cx_pos+15);
 	
 	/* PLATFORM POSITIONING */
-	assign platform1_fill = (vCount >= y1_pos) &&
-							(vCount <= y1_pos+15) &&
-							(hCount >= x1_pos-25) &&
-							(hCount <= x1_pos+25);
+	assign platform1_fill = (vCount >= py1_pos) &&
+							(vCount <= py1_pos+15) &&
+							(hCount >= px1_pos-25) &&
+							(hCount <= px1_pos+25);
 
-	assign platform2_fill = (vCount >= y2_pos) &&
-							(vCount <= y2_pos+15) &&
-							(hCount >= x2_pos-25) &&
-							(hCount <= x2_pos+25);
+	assign platform2_fill = (vCount >= py2_pos) &&
+							(vCount <= py2_pos+15) &&
+							(hCount >= px2_pos-25) &&
+							(hCount <= px2_pos+25);
 
-	assign platform3_fill = (vCount >= y3_pos) &&
-							(vCount <= y3_pos+15) &&
-							(hCount >= x3_pos-25) &&
-							(hCount <= x3_pos+25);
+	assign platform3_fill = (vCount >= py3_pos) &&
+							(vCount <= py3_pos+15) &&
+							(hCount >= px3_pos-25) &&
+							(hCount <= px3_pos+25);
 
-	assign platform4_fill = (vCount >= y4_pos) &&
-							(vCount <= y4_pos+15) &&
-							(hCount >= x4_pos-25) &&
-							(hCount <= x4_pos+25);
+	assign platform4_fill = (vCount >= py4_pos) &&
+							(vCount <= py4_pos+15) &&
+							(hCount >= px4_pos-25) &&
+							(hCount <= px4_pos+25);
 
-	assign platform5_fill = (vCount >= y5_pos) &&
-							(vCount <= y5_pos+15) &&
-							(hCount >= x5_pos-25) &&
-							(hCount <= x5_pos+25);
+	assign platform5_fill = (vCount >= py5_pos) &&
+							(vCount <= py5_pos+15) &&
+							(hCount >= px5_pos-25) &&
+							(hCount <= px5_pos+25);
 
 	/* when outputting the rgb value in an always block like this, make sure to include the if(~bright) statement, as this ensures the monitor 
 	will output some data to every pixel and not just the images you are trying to display */
@@ -122,20 +128,20 @@ module main_controller(
 	begin : platform_positioning
 		// starting position of char
 		if(rst) begin 
-			x1_pos <= 197;
-			y1_pos <= 56;
+			px1_pos <= 197;
+			py1_pos <= 56;
 
-            x2_pos <= 624;
-            y2_pos <= 312;
+            px2_pos <= 624;
+            py2_pos <= 312;
 
-            x3_pos <= 588;
-            y3_pos <= 473;
+            px3_pos <= 588;
+            py3_pos <= 473;
 
-            x4_pos <= 500;
-            y4_pos <= 234;
+            px4_pos <= 500;
+            py4_pos <= 234;
 
-            x5_pos <= 217;
-            y5_pos <= 466;
+            px5_pos <= 217;
+            py5_pos <= 466;
 		end
 	end
 

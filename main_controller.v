@@ -23,47 +23,57 @@ module main_controller(
 	reg [9:0] px4_pos, py4_pos;
 	reg [9:0] px5_pos, py5_pos;
 	
-	// colors
+	/************************************************/ 
+	/* COLORS 										*/
+	/************************************************/
 	// hex guide: A10 B11 C12 D13 E14 F15
 	parameter RED = 12'b1111_0000_0000; // F00
 	parameter OFF_RED = 12'b1100_0011_0011; // C33
 	parameter DARK_GREEN = 12'b0010_0110_0010; // 262
-    parameter GREEN = 12'b0111_1100_0011; // 7C3
-	parameter PURPLE = 12'b1000_0010_1101; // 82D
+    parameter PURPLE = 12'b0111_1100_0011; // 7C3
+	parameter GREEN = 12'b1000_0010_1101; // 82D
 	parameter PASTEL_BLUE = 12'b0110_1000_1111; // 68F
 	parameter WHITE = 12'b1111_1111_1111;
 
-	/* CHARACTER POSITIONING */
+	wire[11:0] rgb_doodler_data;
+
+	doodler_rom doodler_rom_data(.clk(clk), .row(row), .col(col), .color_data(rgb_doodler_data));
+
+	/************************************************/ 
+	/* CHARACTER POSITIONING 						*/
+	/************************************************/
 	assign char_fill = 	(vCount >= cy_pos) && 
 						(vCount <= cy_pos+50) && 
 						(hCount >= cx_pos-15) && 
 						(hCount <= cx_pos+15);
 	
-	/* PLATFORM POSITIONING */
+	/************************************************/ 
+	/* PLATFORM POSITIONING 						*/
+	/************************************************/
 	assign platform1_fill = (vCount >= py1_pos) &&
-							(vCount <= py1_pos+15) &&
-							(hCount >= px1_pos-25) &&
-							(hCount <= px1_pos+25);
+							(vCount <= py1_pos+20) &&
+							(hCount >= px1_pos-50) &&
+							(hCount <= px1_pos+50);
 
 	assign platform2_fill = (vCount >= py2_pos) &&
-							(vCount <= py2_pos+15) &&
-							(hCount >= px2_pos-25) &&
-							(hCount <= px2_pos+25);
+							(vCount <= py2_pos+20) &&
+							(hCount >= px2_pos-50) &&
+							(hCount <= px2_pos+50);
 
 	assign platform3_fill = (vCount >= py3_pos) &&
-							(vCount <= py3_pos+15) &&
-							(hCount >= px3_pos-25) &&
-							(hCount <= px3_pos+25);
+							(vCount <= py3_pos+20) &&
+							(hCount >= px3_pos-50) &&
+							(hCount <= px3_pos+50);
 
 	assign platform4_fill = (vCount >= py4_pos) &&
-							(vCount <= py4_pos+15) &&
-							(hCount >= px4_pos-25) &&
-							(hCount <= px4_pos+25);
+							(vCount <= py4_pos+20) &&
+							(hCount >= px4_pos-50) &&
+							(hCount <= px4_pos+50);
 
 	assign platform5_fill = (vCount >= py5_pos) &&
-							(vCount <= py5_pos+15) &&
-							(hCount >= px5_pos-25) &&
-							(hCount <= px5_pos+25);
+							(vCount <= py5_pos+20) &&
+							(hCount >= px5_pos-50) &&
+							(hCount <= px5_pos+50);
 
 	/* when outputting the rgb value in an always block like this, make sure to include the if(~bright) statement, as this ensures the monitor 
 	will output some data to every pixel and not just the images you are trying to display */
@@ -80,6 +90,7 @@ module main_controller(
 		else	
 			rgb = WHITE;
 	end
+
 
 	always@(posedge clk, posedge rst)
 	begin : jump_counter

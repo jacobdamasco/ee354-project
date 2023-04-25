@@ -7,7 +7,8 @@ module main_controller(
 	input up, input down, input left, input right,
 	input [9:0] hCount, vCount,
 	output reg [11:0] rgb,
-	output reg [11:0] background
+	output reg [11:0] background,
+	output reg [15:0] score
    );
 
 	wire block_fill;
@@ -17,14 +18,21 @@ module main_controller(
 	reg [7:0] jump_ctr;
 
 	// platform positions
+	// green blocks
 	reg [9:0] px1_pos, py1_pos;
 	reg [9:0] px2_pos, py2_pos;
 	reg [9:0] px3_pos, py3_pos;
+	reg [9:0] px6_pos, py6_pos;
+	reg [9:0] px7_pos, py7_pos;
+	reg [9:0] px8_pos, py8_pos;
+
+	// red blocks
 	reg [9:0] px4_pos, py4_pos;
 	reg [9:0] px5_pos, py5_pos;
 
 	// end screen positions;
 	reg [9:0] endx_pos, endy_pos;
+	reg [9:0] finx_pos, finy_pos;
 
 	// rng
 	reg [9:0] seed;
@@ -32,20 +40,28 @@ module main_controller(
 
 	// collision detection
 	reg collision;
+	reg red_hit;
+	reg [15:0] score;
 
 	// game over
 	reg game_over;
+
+	// inital block
+	initial begin
+		score = 15'd0;
+	end
 	
 	/************************************************/ 
 	/* COLORS 										*/
 	/************************************************/
 	// hex guide: A10 B11 C12 D13 E14 F15
+	// [11:7] = red, [7:4] = blue, [3:0] = green
 	parameter BLACK = 12'b0000_0000_0000; // 000
 	parameter RED = 12'b1111_0000_0000; // F00
 	parameter OFF_RED = 12'b1100_0011_0011; // C33
 	parameter GREEN = 12'b1000_0010_1101; // 82D
-	parameter CLOTHES_COLOR = 12'b0000_1111_0000; // 794
-	parameter BODY_COLOR = 12'b0000_1111_0000; //BC4
+	parameter CLOTHES_COLOR = 12'b0111_0100_1001; // 794
+	parameter BODY_COLOR = 12'b1011_0100_1100; //BC4
 	parameter WHITE = 12'b1111_1111_1111; // FFF
 
 
@@ -217,8 +233,38 @@ module main_controller(
 							(hCount >= px5_pos-50) &&
 							(hCount <= px5_pos+50);
 
+	assign platform6_fill = (vCount >= py6_pos) &&
+							(vCount <= py6_pos+15) &&
+							(hCount >= px6_pos-50) &&
+							(hCount <= px6_pos+50);
+
+	assign platform7_fill = (vCount >= py7_pos) &&
+							(vCount <= py7_pos+15) &&
+							(hCount >= px7_pos-50) &&
+							(hCount <= px7_pos+50);
+
+	assign platform8_fill = (vCount >= py8_pos) &&
+							(vCount <= py8_pos+15) &&
+							(hCount >= px8_pos-50) &&
+							(hCount <= px8_pos+50);
+
 	assign end_screen = (vCount >= endy_pos) && (vCount <= endy_pos+525) && 
 						(hCount >= endx_pos+100) && (hCount <= endx_pos+800);
+
+	assign end_FIN = letter_F || letter_I || letter_N;
+	
+	assign letter_F = ((hCount >= finx_pos+78) && (hCount <= finx_pos+109) && (vCount >= finy_pos+110) && (vCount <= finy_pos+117)) ||
+	((hCount >= finx_pos+78) && (hCount <= finx_pos+85) && (vCount >= finy_pos+118) && (vCount <= finy_pos+149)) ||
+	((hCount >= finx_pos+86) && (hCount <= finx_pos+101) && (vCount >= finy_pos+126) && (vCount <= finy_pos+133));
+
+	assign letter_I = ((hCount >= finx_pos+118) && (hCount <= finx_pos+141) && (vCount >= finy_pos+110) && (vCount <= finy_pos+117)) ||
+	((hCount >= finx_pos+126) && (hCount <= finx_pos+133) && (vCount >= finy_pos+118) && (vCount <= finy_pos+141)) ||
+	((hCount >= finx_pos+118) && (hCount <= finx_pos+141) && (vCount >= finy_pos+142) && (vCount <= finy_pos+149));
+
+	assign letter_N = ((hCount >= finx_pos+150) && (hCount <= finx_pos+157) && (vCount >= finy_pos+110) && (vCount <= finy_pos+149)) ||
+	((hCount >= finx_pos+158) && (hCount <= finx_pos+165) && (vCount >= finy_pos+118) && (vCount <= finy_pos+125)) ||
+	((hCount >= finx_pos+166) && (hCount <= finx_pos+173) && (vCount >= finy_pos+126) && (vCount <= finy_pos+133)) ||
+	((hCount >= finx_pos+174) && (hCount <= finx_pos+181) && (vCount >= finy_pos+110) && (vCount <= finy_pos+149));
 
 
 	/* when outputting the rgb value in an always block like this, make sure to include the if(~bright) statement, as this ensures the monitor 
@@ -236,10 +282,12 @@ module main_controller(
 			rgb = CLOTHES_COLOR;
 		else if (doodler_body && !game_over)
 			rgb = BODY_COLOR;
-    	else if ((platform1_fill || platform2_fill || platform3_fill) && !game_over) 
+    	else if ((platform1_fill || platform2_fill || platform3_fill || platform6_fill || platform7_fill || platform8_fill) && !game_over) 
             rgb = GREEN;
         else if ((platform4_fill || platform5_fill) && !game_over) 
             rgb = OFF_RED;
+		else if (game_over && end_FIN)
+			rgb = WHITE;
 		else if (game_over && end_screen)
 			rgb = BLACK;
 		else	
@@ -257,8 +305,11 @@ module main_controller(
 		end
 		else if (clk) begin
 			jump_ctr <= jump_ctr + 1'b1;
-			if (collision == 1) begin
+			if ((jump_ctr > 64) && (collision == 1) && (red_hit == 0)) begin
 				jump_ctr <= 0;
+			end
+			if (cy_pos <= 34) begin
+				jump_ctr <= 65;
 			end
 		end
 	end
@@ -284,14 +335,22 @@ module main_controller(
 	/* CHAR MOVEMENT		 						*/
 	/************************************************/
 	always@(posedge clk, posedge rst) 
-	begin : char_mvmt
+	begin : state_machine
 		// starting position of char
 		if(rst) begin 
-			cx_pos <= 464;
-			cy_pos <= 452;
+			cx_pos <= 588;
+            cy_pos <= 409;
+
+			finx_pos <= 350;
+			finy_pos <= 133;
+
 			endx_pos <= 0;
 			endy_pos <= 0;
+
 			collision <= 0;
+			red_hit <= 0;
+
+			score <= 0;
 			game_over <= 0;
 		end
 		else if (clk) begin
@@ -303,31 +362,47 @@ module main_controller(
 			else if (jump_ctr > 64 && collision == 0) begin
 				cy_pos <= cy_pos + 3;
 				// check for collision on the way down
-				if ((cx_pos+32 <= (px1_pos + 50)) && (cx_pos+32 >= (px1_pos - 50)) && (cy_pos+64 == py1_pos + 1))
+				if ((cx_pos+32 <= (px1_pos+50)) && (cx_pos+32 >= (px1_pos-50)) && (cy_pos+64 >= py1_pos +1) && (cy_pos+64 <= py1_pos + 4))
 					collision <= 1;
-				if ((cx_pos+32 <= (px2_pos + 50)) && (cx_pos+32 >= (px2_pos - 50)) && (cy_pos+64 == py2_pos + 1))
+				if ((cx_pos+32 <= (px2_pos + 50)) && (cx_pos+32 >= (px2_pos - 50)) && (cy_pos+64 >= py2_pos + 1) && (cy_pos+64 <= py2_pos + 4))
 					collision <= 1;
-				if ((cx_pos+32 <= (px3_pos + 50)) && (cx_pos+32 >= (px3_pos - 50)) && (cy_pos+64 == py3_pos + 1))
+				if ((cx_pos+32 <= (px3_pos + 50)) && (cx_pos+32 >= (px3_pos - 50)) && (cy_pos+64 >= py3_pos + 1) && (cy_pos+64 <= py3_pos + 4))
 					collision <= 1;
-				if ((cx_pos+32 <= (px4_pos + 50)) && (cx_pos+32 >= (px4_pos - 50)) && (cy_pos+64 == py4_pos + 1))
+				if ((cx_pos+32 <= (px4_pos + 50)) && (cx_pos+32 >= (px4_pos - 50)) && (cy_pos+64 >= py4_pos + 1) && (cy_pos+64 <= py4_pos + 4))
+					red_hit <= 1;
+				if ((cx_pos+32 <= (px5_pos + 50)) && (cx_pos+32 >= (px5_pos - 50)) && (cy_pos+64 >= py5_pos + 1) && (cy_pos+64 >= py5_pos + 4))
+					red_hit <= 1;
+				if ((cx_pos+32 <= (px6_pos + 50)) && (cx_pos+32 >= (px6_pos - 50)) && (cy_pos+64 >= py6_pos + 1) && (cy_pos+64 <= py6_pos + 4))
 					collision <= 1;
-				if ((cx_pos+32 <= (px5_pos + 50)) && (cx_pos+32 >= (px5_pos - 50)) && (cy_pos+64 == py5_pos + 1))
+				if ((cx_pos+32 <= (px7_pos + 50)) && (cx_pos+32 >= (px7_pos - 50)) && (cy_pos+64 >= py7_pos + 1) && (cy_pos+64 <= py7_pos + 4))
+					collision <= 1;
+				if ((cx_pos+32 <= (px8_pos + 50)) && (cx_pos+32 >= (px8_pos - 50)) && (cy_pos+64 >= py8_pos + 1) && (cy_pos+64 <= py8_pos + 4))
 					collision <= 1;
 			end
 
 			if (collision) begin
-				if ((cx_pos+32 <= (px1_pos + 50)) && (cx_pos+32 >= (px1_pos - 50)) && (cy_pos+64 == py1_pos + 1))
+				if ((cx_pos+32 <= (px1_pos+50)) && (cx_pos+32 >= (px1_pos-50)) && (cy_pos+64 >= py1_pos +1) && (cy_pos+64 <= py1_pos + 4))
 					cy_pos <= py1_pos - 64 + 1;
-				if ((cx_pos+32 <= (px2_pos + 50)) && (cx_pos+32 >= (px2_pos - 50)) && (cy_pos+64 == py2_pos + 1))
+				if ((cx_pos+32 <= (px2_pos + 50)) && (cx_pos+32 >= (px2_pos - 50)) && (cy_pos+64 >= py2_pos + 1) && (cy_pos+64 <= py2_pos + 4))
 					cy_pos <= py2_pos - 64 + 1;
-				if ((cx_pos+32 <= (px3_pos + 50)) && (cx_pos+32 >= (px3_pos - 50)) && (cy_pos+64 == py3_pos + 1))
+				if ((cx_pos+32 <= (px3_pos + 50)) && (cx_pos+32 >= (px3_pos - 50)) && (cy_pos+64 >= py3_pos + 1) && (cy_pos+64 <= py3_pos + 4))
 					cy_pos <= py3_pos - 64 + 1;
-				if ((cx_pos+32 <= (px4_pos + 50)) && (cx_pos+32 >= (px4_pos - 50)) && (cy_pos+64 == py4_pos + 1))
-					game_over <= 1;
-				if ((cx_pos+32 <= (px5_pos + 50)) && (cx_pos+32 >= (px5_pos - 50)) && (cy_pos+64 == py5_pos + 1))
-					game_over <= 1;
+				if ((cx_pos+32 <= (px6_pos + 50)) && (cx_pos+32 >= (px6_pos - 50)) && (cy_pos+64 >= py6_pos + 1) && (cy_pos+64 <= py6_pos + 4))
+					cy_pos <= py6_pos - 64 + 1;
+				if ((cx_pos+32 <= (px7_pos + 50)) && (cx_pos+32 >= (px7_pos - 50)) && (cy_pos+64 >= py7_pos + 1) && (cy_pos+64 <= py7_pos + 4))
+					cy_pos <= py7_pos - 64 + 1;
+				if ((cx_pos+32 <= (px8_pos + 50)) && (cx_pos+32 >= (px8_pos - 50)) && (cy_pos+64 >= py8_pos + 1) && (cy_pos+64 <= py8_pos + 4))
+					cy_pos <= py8_pos - 64 + 1;
 				collision <= 0; 
 			end
+
+			if ((cy_pos >= 510) || (red_hit == 1)) begin
+				game_over <= 1;
+			end 
+
+			if ((collision == 1) && (game_over == 0)) begin
+				score <= score + 10;
+			end 
 
 			// controls
 			if (right) begin
@@ -362,6 +437,15 @@ module main_controller(
 
             px5_pos <= 217;
             py5_pos <= 466;
+
+            px6_pos <= 312;
+            py6_pos <= 308;
+
+            px7_pos <= 505;
+            py7_pos <= 178;
+
+            px8_pos <= 698;
+            py8_pos <= 34;
 		end
 		else if (clk) begin
 			// if a collision is detected
@@ -371,6 +455,9 @@ module main_controller(
 				py3_pos <= py3_pos + 20;
 				py4_pos <= py4_pos + 20;
 				py5_pos <= py5_pos + 20;
+				py6_pos <= py6_pos + 20;
+				py7_pos <= py7_pos + 20;
+				py8_pos <= py8_pos + 20;
 			end
     
 			if (py1_pos > 510) begin
@@ -392,6 +479,18 @@ module main_controller(
 			if (py5_pos > 510) begin
 				py5_pos <= 50;
 				px5_pos <= rand_num; 
+			end
+			if (py6_pos > 510) begin
+				py6_pos <= 50;
+				px6_pos <= rand_num; 
+			end
+			if (py7_pos > 510) begin
+				py7_pos <= 50;
+				px7_pos <= rand_num; 
+			end
+			if (py8_pos > 510) begin
+				py8_pos <= 50;
+				px8_pos <= rand_num; 
 			end
 		end
 	end
